@@ -67,6 +67,18 @@ body{font-family:var(--font);background:var(--bg);color:var(--text);min-height:1
 .ctrl-group{display:flex;align-items:center;gap:6px}
 .ctrl-group label{font-size:10px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:0.5px}
 .ctrl-group select{padding:5px 8px;font-size:12px;border:1px solid var(--border2);border-radius:6px;background:var(--surface);color:var(--text);font-family:var(--font);outline:none;cursor:pointer}
+
+/* Multi-select dropdown */
+.multi-select{position:relative;min-width:140px}
+.multi-select .ms-btn{padding:5px 28px 5px 8px;font-size:12px;border:1px solid var(--border2);border-radius:6px;background:var(--surface);color:var(--text);font-family:var(--font);cursor:pointer;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;display:block;width:100%;text-align:left;position:relative}
+.multi-select .ms-btn::after{content:'▾';position:absolute;right:8px;top:50%;transform:translateY(-50%);font-size:10px;color:var(--text3)}
+.multi-select .ms-panel{display:none;position:absolute;top:100%;left:0;margin-top:4px;background:var(--surface);border:1px solid var(--border2);border-radius:8px;box-shadow:0 8px 24px rgba(0,0,0,0.12);z-index:20;min-width:180px;max-height:260px;overflow-y:auto;padding:4px 0}
+.multi-select.open .ms-panel{display:block}
+.multi-select .ms-item{display:flex;align-items:center;gap:6px;padding:6px 12px;font-size:12px;cursor:pointer;transition:background 0.1s}
+.multi-select .ms-item:hover{background:var(--surface2)}
+.multi-select .ms-item input{accent-color:var(--blue);cursor:pointer}
+.multi-select .ms-item.all{border-bottom:1px solid var(--border);margin-bottom:2px;font-weight:600}
+.multi-select .ms-count{display:inline-flex;align-items:center;justify-content:center;background:var(--blue);color:#fff;border-radius:10px;font-size:9px;font-weight:700;min-width:16px;height:16px;padding:0 4px;margin-left:4px}
 .btn-sm{padding:5px 14px;font-size:12px;font-weight:600;border:none;border-radius:6px;cursor:pointer;font-family:var(--font)}
 .btn-sm.primary{background:var(--blue);color:#fff}.btn-sm.secondary{background:var(--surface2);color:var(--text);border:1px solid var(--border2)}
 .btn-sm.speaking{background:var(--blue-bg);color:var(--blue)}
@@ -226,7 +238,8 @@ table.dt .total-row td{border-top:2px solid var(--border2)}
       <div class="ctrl-group"><label>Período</label><select id="fPeriodo" onchange="onPeriodoChange()"></select></div>
       <div class="ctrl-group" id="mesGroup" style="display:none"><label>Mes</label><select id="fMesDia" onchange="onMesDiaChange()"></select></div>
       <div class="ctrl-group" id="diaGroup" style="display:none"><label>Día</label><select id="fDia"></select></div>
-      <div class="ctrl-group"><label>Bodega</label><select id="fBodega"></select></div>
+      <div class="ctrl-group"><label>Bodega</label><div class="multi-select" id="msBodega"><button class="ms-btn" onclick="toggleMS('msBodega')">Todas</button><div class="ms-panel"></div></div></div>
+      <div class="ctrl-group"><label>Clase</label><div class="multi-select" id="msClase"><button class="ms-btn" onclick="toggleMS('msClase')">Todas</button><div class="ms-panel"></div></div></div>
       <button class="btn-sm primary" onclick="runAnalysis()">Analizar</button>
       <button class="btn-sm secondary" id="btnEsc" onclick="toggleSpeak()">&#128265; Escuchar</button>
       <button class="btn-sm secondary" onclick="downloadCSV()">&#11015; Excel</button>
@@ -264,11 +277,26 @@ function computeSabanaStats(data){const fv=data.filter(d=>d.tipo==='Factura de v
 function computeOVStats(data){const pipeStates=['Aprobación pendiente','Ejecución de la orden pendiente','Facturación pendiente','Parcialmente ejecutada','Facturación pendiente/parcialmente ejecutada'];const pipeline=data.filter(d=>pipeStates.includes(d.estado));const facturada=data.filter(d=>d.estado==='Facturada');const totalPipe=pipeline.reduce((s,d)=>s+d.importe,0);const totalFact=facturada.reduce((s,d)=>s+d.importe,0);const tonPipe=pipeline.reduce((s,d)=>s+d.peso,0);const tonFact=facturada.reduce((s,d)=>s+d.peso,0);const nPipe=new Set(pipeline.map(d=>d.nroDoc)).size;const nFact=new Set(facturada.map(d=>d.nroDoc)).size;const byEstado={};pipeline.forEach(d=>{const e=d.estado;if(!byEstado[e])byEstado[e]={importe:0,peso:0,docs:new Set(),lineas:0};byEstado[e].importe+=d.importe;byEstado[e].peso+=d.peso;byEstado[e].docs.add(d.nroDoc);byEstado[e].lineas++;});const estadoArr=Object.entries(byEstado).map(([k,v])=>({name:k,importe:v.importe,peso:v.peso,docs:v.docs.size,lineas:v.lineas})).sort((a,b)=>b.importe-a.importe);const group=(arr,key)=>{const m={};arr.forEach(d=>{const k=d[key]||'(sin dato)';if(!m[k])m[k]={importe:0,peso:0,docs:new Set()};m[k].importe+=d.importe;m[k].peso+=d.peso;m[k].docs.add(d.nroDoc);});return Object.entries(m).map(([k,v])=>({name:k,importe:v.importe,peso:v.peso,docs:v.docs.size})).sort((a,b)=>b.importe-a.importe);};return{totalPipe,totalFact,tonPipe,tonFact,nPipe,nFact,byEstado:estadoArr,byBodega:group(pipeline,'ubicacion'),byVendedor:group(pipeline,'vendedor'),byClase:group(pipeline,'clase')};}
 
 // Filters
-function populateFilters(){const allMeses=new Set();sabanaData.forEach(d=>{if(d.mes)allMeses.add(d.mes);});ovData.forEach(d=>{if(d.mes)allMeses.add(d.mes);});const meses=[...allMeses].sort();const allBodegas=new Set();sabanaData.forEach(d=>allBodegas.add(d.ubicacion));ovData.forEach(d=>allBodegas.add(d.ubicacion));const bodegas=[...allBodegas].sort();document.getElementById('fPeriodo').innerHTML='<option value="all">Todo el período</option><option value="mes">Por mes</option><option value="dia">Por día</option>';const bSel=document.getElementById('fBodega');bSel.innerHTML='<option value="Todas">Todas</option>';bodegas.forEach(b=>{bSel.innerHTML+=`<option value="${b}">${b}</option>`;});const mSel=document.getElementById('fMesDia');mSel.innerHTML='';meses.forEach(m=>{mSel.innerHTML+=`<option value="${m}">${mesLabel(m)}</option>`;});}
+// Multi-select
+function toggleMS(id){const el=document.getElementById(id);el.classList.toggle('open');document.querySelectorAll('.multi-select').forEach(m=>{if(m.id!==id)m.classList.remove('open');});}
+document.addEventListener('click',e=>{if(!e.target.closest('.multi-select'))document.querySelectorAll('.multi-select').forEach(m=>m.classList.remove('open'));});
+function getMS(id){const checks=document.querySelectorAll(`#${id} .ms-panel input[type=checkbox]:not(.ms-all)`);const all=document.querySelector(`#${id} .ms-all`);if(all&&all.checked)return'all';const selected=[];checks.forEach(c=>{if(c.checked)selected.push(c.value);});return selected.length===checks.length?'all':selected;}
+function updateMSLabel(id){const val=getMS(id);const btn=document.querySelector(`#${id} .ms-btn`);if(val==='all'){btn.innerHTML='Todas';}else if(val.length===1){btn.innerHTML=val[0];}else if(val.length===0){btn.innerHTML='Ninguna';}else{btn.innerHTML=val[0]+`<span class="ms-count">+${val.length-1}</span>`;}}
+function onMSChange(id){const checks=document.querySelectorAll(`#${id} .ms-panel input[type=checkbox]:not(.ms-all)`);const all=document.querySelector(`#${id} .ms-all`);if(all){const allChecked=[...checks].every(c=>c.checked);all.checked=allChecked;}updateMSLabel(id);}
+function onMSAll(id){const all=document.querySelector(`#${id} .ms-all`);const checks=document.querySelectorAll(`#${id} .ms-panel input[type=checkbox]:not(.ms-all)`);checks.forEach(c=>{c.checked=all.checked;});updateMSLabel(id);}
+function buildMSPanel(id,items){const panel=document.querySelector(`#${id} .ms-panel`);let h=`<label class="ms-item all"><input type="checkbox" class="ms-all" checked onchange="onMSAll('${id}')"> Todas</label>`;items.forEach(item=>{h+=`<label class="ms-item"><input type="checkbox" value="${item}" checked onchange="onMSChange('${id}')"> ${item}</label>`;});panel.innerHTML=h;updateMSLabel(id);}
+
+function populateFilters(){const allMeses=new Set();sabanaData.forEach(d=>{if(d.mes)allMeses.add(d.mes);});ovData.forEach(d=>{if(d.mes)allMeses.add(d.mes);});const meses=[...allMeses].sort();
+document.getElementById('fPeriodo').innerHTML='<option value="all">Todo el período</option><option value="mes">Por mes</option><option value="dia">Por día</option>';
+const allBodegas=new Set();sabanaData.forEach(d=>allBodegas.add(d.ubicacion));ovData.forEach(d=>allBodegas.add(d.ubicacion));const bodegas=[...allBodegas].sort();
+buildMSPanel('msBodega',bodegas);
+const allClases=new Set();sabanaData.forEach(d=>{if(d.clase)allClases.add(d.clase);});ovData.forEach(d=>{if(d.clase)allClases.add(d.clase);});const clases=[...allClases].sort();
+buildMSPanel('msClase',clases);
+const mSel=document.getElementById('fMesDia');mSel.innerHTML='';meses.forEach(m=>{mSel.innerHTML+=`<option value="${m}">${mesLabel(m)}</option>`;});}
 function onPeriodoChange(){const v=document.getElementById('fPeriodo').value;document.getElementById('mesGroup').style.display=(v==='mes'||v==='dia')?'':'none';document.getElementById('diaGroup').style.display=v==='dia'?'':'none';if(v==='mes'||v==='dia')onMesDiaChange();}
 function onMesDiaChange(){const mes=document.getElementById('fMesDia').value;const allDias=new Set();sabanaData.filter(d=>d.mes===mes).forEach(d=>{if(d.dia)allDias.add(d.dia);});ovData.filter(d=>d.mes===mes).forEach(d=>{if(d.dia)allDias.add(d.dia);});const dias=[...allDias].sort();const dSel=document.getElementById('fDia');dSel.innerHTML='';dias.forEach(d=>{const p=d.split('-');dSel.innerHTML+=`<option value="${d}">${parseInt(p[2])} ${(mesNames[p[1]]||'').substring(0,3)} ${p[0]}</option>`;});}
-function applyFilters(){const per=document.getElementById('fPeriodo').value;const bod=document.getElementById('fBodega').value;const mesVal=document.getElementById('fMesDia').value;const diaVal=document.getElementById('fDia').value;const filter=d=>{if(per==='dia'&&d.dia!==diaVal)return false;else if(per==='mes'&&d.mes!==mesVal)return false;if(bod!=='Todas'&&d.ubicacion!==bod)return false;return true;};filteredSabana=sabanaData.filter(filter);filteredOV=ovData.filter(filter);}
-function getLabel(){const per=document.getElementById('fPeriodo').value;const bod=document.getElementById('fBodega').value;const mesVal=document.getElementById('fMesDia').value;const diaVal=document.getElementById('fDia').value;const label=[];if(per==='dia'){const p=diaVal.split('-');label.push((parseInt(p[2])+' '+(mesNames[p[1]]||'')+' '+p[0]).toUpperCase());}else if(per==='mes')label.push(mesLabel(mesVal).toUpperCase());else label.push('TODO EL PERÍODO');if(bod!=='Todas')label.push(bod.toUpperCase());else label.push('TODAS LAS BODEGAS');return label.join(' · ');}
+function applyFilters(){const per=document.getElementById('fPeriodo').value;const bod=getMS('msBodega');const cls=getMS('msClase');const mesVal=document.getElementById('fMesDia').value;const diaVal=document.getElementById('fDia').value;const filter=d=>{if(per==='dia'&&d.dia!==diaVal)return false;else if(per==='mes'&&d.mes!==mesVal)return false;if(bod!=='all'&&!bod.includes(d.ubicacion))return false;if(cls!=='all'&&!cls.includes(d.clase))return false;return true;};filteredSabana=sabanaData.filter(filter);filteredOV=ovData.filter(filter);}
+function getLabel(){const per=document.getElementById('fPeriodo').value;const bod=getMS('msBodega');const cls=getMS('msClase');const mesVal=document.getElementById('fMesDia').value;const diaVal=document.getElementById('fDia').value;const label=[];if(per==='dia'){const p=diaVal.split('-');label.push((parseInt(p[2])+' '+(mesNames[p[1]]||'')+' '+p[0]).toUpperCase());}else if(per==='mes')label.push(mesLabel(mesVal).toUpperCase());else label.push('TODO EL PERÍODO');if(bod==='all')label.push('TODAS LAS BODEGAS');else if(bod.length<=2)label.push(bod.join(' + ').toUpperCase());else label.push(bod.length+' BODEGAS');if(cls!=='all'){if(cls.length<=2)label.push(cls.join(' + ').toUpperCase());else label.push(cls.length+' CLASES');}return label.join(' · ');}
 
 // Navigation
 function nav(tab,btn){currentTab=tab;document.querySelectorAll('.nav-item').forEach(b=>b.classList.remove('active'));if(btn)btn.classList.add('active');renderTab();}
@@ -290,13 +318,15 @@ function renderTab(){
     // When filtering by day, calculate MTD (month-to-date) for meta avance
     let mtdNeta=ss.ventaNeta;
     const diaVal=document.getElementById('fDia').value;
-    const bod=document.getElementById('fBodega').value;
+    const bodFilt=getMS('msBodega');
+    const clsFilt=getMS('msClase');
     if(per==='dia'&&meta>0){
       const mesSel=document.getElementById('fMesDia').value;
       const mtdData=sabanaData.filter(d=>{
         if(d.mes!==mesSel)return false;
         if(d.dia>diaVal)return false;
-        if(bod!=='Todas'&&d.ubicacion!==bod)return false;
+        if(bodFilt!=='all'&&!bodFilt.includes(d.ubicacion))return false;
+        if(clsFilt!=='all'&&!clsFilt.includes(d.clase))return false;
         return true;
       });
       const mtdIng=mtdData.filter(d=>d.tipo==='Factura de venta').reduce((s,d)=>s+d.ingresos,0);
