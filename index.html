@@ -1,0 +1,486 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Agente de Ventas — Dipisa</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{--font:'DM Sans',system-ui,sans-serif;--mono:'JetBrains Mono',monospace;
+--bg:#f4f4f2;--surface:#fff;--surface2:#f0efeb;--surface3:#e8e7e3;
+--text:#1a1a18;--text2:#6b6a65;--text3:#9c9b95;
+--border:rgba(0,0,0,0.07);--border2:rgba(0,0,0,0.13);
+--green:#16a34a;--green-bg:#dcfce7;--green-border:#22c55e;
+--blue:#2563eb;--blue-bg:#dbeafe;--blue-border:#60a5fa;
+--orange:#ea580c;--orange-bg:#fff7ed;--orange-border:#fb923c;
+--purple:#9333ea;--purple-bg:#f3e8ff;--purple-border:#a855f7;
+--red:#dc2626;--red-bg:#fef2f2;--red-border:#f87171;
+--teal:#0d9488;--teal-bg:#f0fdfa;--teal-border:#2dd4bf;
+--amber:#d97706;--amber-bg:#fffbeb;--amber-border:#fbbf24;
+--sidebar-w:230px;--radius:10px;--radius-lg:14px}
+body{font-family:var(--font);background:var(--bg);color:var(--text);min-height:100vh}
+
+/* Upload */
+.upload-screen{display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:85vh;gap:1.5rem}
+.upload-screen h1{font-size:26px;font-weight:700;letter-spacing:-0.5px}
+.upload-screen p{color:var(--text2);font-size:14px;max-width:480px;text-align:center;line-height:1.6}
+.upload-grid{display:grid;grid-template-columns:1fr 1fr;gap:1rem;width:100%;max-width:560px}
+.upload-card{border:2px dashed var(--border2);border-radius:var(--radius-lg);padding:2rem 1.5rem;cursor:pointer;transition:all 0.2s;background:var(--surface);text-align:center}
+.upload-card:hover{border-color:var(--blue);background:var(--blue-bg)}
+.upload-card.loaded{border:2px solid var(--green-border);background:var(--green-bg)}
+.upload-card .icon{font-size:32px;margin-bottom:6px}
+.upload-card .label{font-size:14px;font-weight:600}
+.upload-card .hint{font-size:11px;color:var(--text3);margin-top:2px}
+.upload-card .fname{font-size:11px;color:var(--green);font-weight:500;margin-top:6px;word-break:break-all}
+.upload-card input{display:none}
+.btn-start{padding:12px 36px;font-size:15px;font-weight:600;background:var(--blue);color:#fff;border:none;border-radius:var(--radius);cursor:pointer;font-family:var(--font);display:none}
+.btn-start.show{display:inline-block}
+
+/* Layout */
+#dashboard{display:none}
+.layout{display:flex;min-height:100vh}
+
+/* Sidebar */
+.sidebar{width:var(--sidebar-w);background:var(--surface);border-right:1px solid var(--border);padding:20px 0;position:fixed;top:0;left:0;bottom:0;overflow-y:auto;z-index:10}
+.sidebar .logo{padding:0 20px 20px;border-bottom:1px solid var(--border);margin-bottom:8px}
+.sidebar .logo h2{font-size:15px;font-weight:700;letter-spacing:-0.3px}
+.sidebar .logo span{font-size:11px;color:var(--text3)}
+.nav-group{padding:12px 12px 4px}
+.nav-group-label{font-size:10px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:1px;padding:0 8px 6px}
+.nav-item{display:flex;align-items:center;gap:8px;padding:8px 12px;border-radius:8px;cursor:pointer;font-size:13px;color:var(--text2);transition:all 0.15s;border:none;background:none;width:100%;text-align:left;font-family:var(--font)}
+.nav-item:hover{background:var(--surface2);color:var(--text)}
+.nav-item.active{background:var(--blue-bg);color:var(--blue);font-weight:600}
+.nav-item .nav-icon{width:18px;text-align:center;font-size:14px;flex-shrink:0}
+.nav-item .nav-label{flex:1}
+.sidebar-footer{padding:12px;margin-top:auto;border-top:1px solid var(--border)}
+.sidebar-footer button{width:100%;padding:8px;font-size:12px;border:1px solid var(--border2);border-radius:8px;background:none;cursor:pointer;color:var(--text2);font-family:var(--font)}
+.sidebar-footer button:hover{background:var(--surface2)}
+
+/* Main content */
+.main{margin-left:var(--sidebar-w);flex:1;min-height:100vh}
+.top-bar{background:var(--surface);border-bottom:1px solid var(--border);padding:12px 28px;display:flex;align-items:center;gap:12px;flex-wrap:wrap;position:sticky;top:0;z-index:5}
+.top-bar .file-pills{display:flex;gap:6px;flex:1;flex-wrap:wrap}
+.file-pill{display:inline-flex;align-items:center;gap:5px;padding:4px 12px;border-radius:20px;font-size:11px;font-weight:500}
+.file-pill.green{background:var(--green-bg);color:var(--green)}.file-pill.blue{background:var(--blue-bg);color:var(--blue)}
+.file-pill .dot{width:6px;height:6px;border-radius:50%;background:currentColor}
+.ctrl-group{display:flex;align-items:center;gap:6px}
+.ctrl-group label{font-size:10px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:0.5px}
+.ctrl-group select{padding:5px 8px;font-size:12px;border:1px solid var(--border2);border-radius:6px;background:var(--surface);color:var(--text);font-family:var(--font);outline:none;cursor:pointer}
+.btn-sm{padding:5px 14px;font-size:12px;font-weight:600;border:none;border-radius:6px;cursor:pointer;font-family:var(--font)}
+.btn-sm.primary{background:var(--blue);color:#fff}.btn-sm.secondary{background:var(--surface2);color:var(--text);border:1px solid var(--border2)}
+.btn-sm.speaking{background:var(--blue-bg);color:var(--blue)}
+
+.content{padding:24px 28px;max-width:1000px}
+.page-title{font-size:18px;font-weight:700;letter-spacing:-0.3px;margin-bottom:4px}
+.page-sub{font-size:12px;color:var(--text3);margin-bottom:20px}
+
+/* KPI */
+.kpi-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:10px;margin-bottom:14px}
+.kpi-card{background:var(--surface);border-radius:var(--radius-lg);padding:16px 18px}
+.kpi-card .lbl{font-size:11px;color:var(--text2)}
+.kpi-card .val{font-size:22px;font-weight:700;letter-spacing:-0.8px;font-family:var(--mono);margin-top:4px}
+.kpi-card .sub{font-size:11px;color:var(--text3);margin-top:2px}
+.kpi-card.blue{border:2px dashed var(--blue-border)}.kpi-card.blue .val{color:var(--blue)}
+.kpi-card.green{border:2px solid var(--green-border)}.kpi-card.green .val{color:var(--green)}
+.kpi-card.orange{border:2px dashed var(--orange-border)}.kpi-card.orange .val{color:var(--orange)}
+.kpi-card.purple{border:2px dashed var(--purple-border)}.kpi-card.purple .val{color:var(--purple)}
+
+/* Exec cards */
+.exec-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px;margin-bottom:20px}
+.exec-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);padding:18px;position:relative;overflow:hidden}
+.exec-card .stripe{position:absolute;top:0;left:0;width:4px;height:100%;border-radius:4px 0 0 4px}
+.exec-card .ec-label{font-size:11px;color:var(--text3);text-transform:uppercase;letter-spacing:0.5px;margin-left:8px}
+.exec-card .ec-val{font-size:24px;font-weight:700;font-family:var(--mono);margin:4px 0 2px 8px}
+.exec-card .ec-sub{font-size:11px;color:var(--text2);margin-left:8px}
+
+/* Progress */
+.progress-wrap{margin:8px 0}
+.progress-bar{height:12px;background:var(--surface2);border-radius:6px;overflow:hidden;position:relative}
+.progress-fill{height:100%;border-radius:6px;transition:width 0.4s}
+.progress-label{position:absolute;top:0;left:0;right:0;text-align:center;font-size:9px;font-weight:600;line-height:12px;color:var(--text)}
+
+/* Tables */
+.data-section{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);margin-bottom:16px;overflow-x:auto}
+.data-section .title{font-size:11px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:0.8px;padding:14px 18px 10px}
+table.dt{width:100%;border-collapse:collapse}
+table.dt th{text-align:left;padding:8px 16px;font-size:10px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:0.4px;border-bottom:1px solid var(--border);background:var(--surface2)}
+table.dt td{padding:10px 16px;border-bottom:1px solid var(--border);font-size:13px}
+table.dt tr:last-child td{border-bottom:none}
+table.dt .num{text-align:right;font-family:var(--mono);font-size:12px}
+table.dt .total-row{font-weight:700;background:var(--surface2)}
+table.dt .total-row td{border-top:2px solid var(--border2)}
+
+.badge{display:inline-block;padding:2px 10px;border-radius:5px;font-size:11px;font-weight:600;white-space:nowrap}
+.badge.green{background:var(--green-bg);color:var(--green)}.badge.blue{background:var(--blue-bg);color:var(--blue)}
+.badge.orange{background:var(--orange-bg);color:var(--orange)}.badge.purple{background:var(--purple-bg);color:var(--purple)}
+.badge.red{background:var(--red-bg);color:var(--red)}.badge.teal{background:var(--teal-bg);color:var(--teal)}
+.badge.amber{background:var(--amber-bg);color:var(--amber)}
+
+.bar-cell{display:flex;align-items:center;gap:6px}
+.bar-track{flex:1;height:6px;background:var(--surface2);border-radius:3px;overflow:hidden;min-width:60px}
+.bar-fill{height:100%;border-radius:3px;transition:width 0.4s}
+.bar-fill.green{background:var(--green)}.bar-fill.blue{background:var(--blue)}.bar-fill.orange{background:var(--orange)}
+.bar-fill.purple{background:var(--purple)}.bar-fill.red{background:var(--red)}.bar-fill.teal{background:var(--teal)}.bar-fill.amber{background:var(--amber)}
+.bar-pct{font-size:11px;font-weight:600;color:var(--text2);min-width:38px;text-align:right}
+
+.alert-badge{display:inline-flex;align-items:center;gap:4px;padding:2px 8px;border-radius:5px;font-size:11px;font-weight:600}
+.alert-badge.red{background:var(--red-bg);color:var(--red)}.alert-badge.amber{background:var(--amber-bg);color:var(--amber)}
+.alert-badge.green{background:var(--green-bg);color:var(--green)}.alert-badge.blue{background:var(--blue-bg);color:var(--blue)}
+.alert-dot{width:6px;height:6px;border-radius:50%;display:inline-block}
+.alert-dot.red{background:var(--red)}.alert-dot.amber{background:var(--amber)}.alert-dot.green{background:var(--green)}
+
+.heatmap-cell{padding:8px 6px;text-align:center;border-radius:5px;font-size:11px;font-weight:600}
+.heat-0{background:var(--surface2);color:var(--text3)}.heat-1{background:#dcfce7;color:#166534}.heat-2{background:#bbf7d0;color:#166534}
+.heat-3{background:#86efac;color:#14532d}.heat-4{background:#4ade80;color:#14532d}.heat-5{background:#22c55e;color:#fff}
+
+.section-label{font-size:11px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:0.8px;margin-bottom:10px}
+
+/* Mobile */
+@media(max-width:800px){
+  .sidebar{width:100%;position:relative;height:auto;border-right:none;border-bottom:1px solid var(--border);padding:12px 0}
+  .nav-group{display:flex;flex-wrap:wrap;gap:2px;padding:4px 8px}
+  .nav-group-label{display:none}
+  .nav-item{padding:6px 10px;font-size:11px}
+  .nav-item .nav-icon{display:none}
+  .main{margin-left:0}
+  .layout{flex-direction:column}
+  .content{padding:16px}
+  .kpi-row{grid-template-columns:1fr 1fr}
+  .exec-grid{grid-template-columns:1fr}
+  .sidebar .logo{padding:0 12px 10px}
+  .sidebar-footer{display:none}
+  .upload-grid{grid-template-columns:1fr}
+}
+</style>
+</head>
+<body>
+
+<div id="uploadScreen" class="upload-screen">
+  <h1>Agente de ventas Dipisa</h1>
+  <p>Sube tus archivos de NetSuite para analizar facturación, pipeline y proyección de ventas</p>
+  <div class="upload-grid">
+    <div class="upload-card" id="cardSabana" onclick="document.getElementById('fileSabana').click()">
+      <div class="icon">&#128200;</div>
+      <div class="label">Sabana Venta</div>
+      <div class="hint">Facturas y NC</div>
+      <div class="fname" id="fnameSabana"></div>
+      <input type="file" id="fileSabana" accept=".xls,.xlsx,.xml" />
+    </div>
+    <div class="upload-card" id="cardOV" onclick="document.getElementById('fileOV').click()">
+      <div class="icon">&#128203;</div>
+      <div class="label">Órdenes de Venta</div>
+      <div class="hint">Pipeline activo</div>
+      <div class="fname" id="fnameOV"></div>
+      <input type="file" id="fileOV" accept=".xls,.xlsx,.xml" />
+    </div>
+  </div>
+  <button class="btn-start" id="btnStart" onclick="startAnalysis()">Analizar</button>
+</div>
+
+<div id="dashboard" class="layout">
+  <nav class="sidebar">
+    <div class="logo"><h2>Dipisa Ventas</h2><span>Agente de análisis</span></div>
+    <div class="nav-group">
+      <div class="nav-group-label">General</div>
+      <button class="nav-item active" onclick="nav('ejecutivo',this)"><span class="nav-icon">&#9673;</span><span class="nav-label">Resumen ejecutivo</span></button>
+      <button class="nav-item" onclick="nav('meta',this)"><span class="nav-icon">&#9898;</span><span class="nav-label">Meta y ritmo</span></button>
+      <button class="nav-item" onclick="nav('alertas',this)"><span class="nav-icon">&#9888;</span><span class="nav-label">Alertas</span></button>
+    </div>
+    <div class="nav-group">
+      <div class="nav-group-label">Facturación</div>
+      <button class="nav-item" onclick="nav('bodega',this)"><span class="nav-icon">&#9642;</span><span class="nav-label">Por bodega</span></button>
+      <button class="nav-item" onclick="nav('vendedor',this)"><span class="nav-icon">&#9642;</span><span class="nav-label">Por vendedor</span></button>
+      <button class="nav-item" onclick="nav('clase',this)"><span class="nav-icon">&#9642;</span><span class="nav-label">Por clase</span></button>
+      <button class="nav-item" onclick="nav('mes',this)"><span class="nav-icon">&#9642;</span><span class="nav-label">Mensual</span></button>
+      <button class="nav-item" onclick="nav('clientes',this)"><span class="nav-icon">&#9642;</span><span class="nav-label">Top clientes</span></button>
+      <button class="nav-item" onclick="nav('nc',this)"><span class="nav-icon">&#9642;</span><span class="nav-label">Notas de crédito</span></button>
+      <button class="nav-item" onclick="nav('departamento',this)"><span class="nav-icon">&#9642;</span><span class="nav-label">Departamento</span></button>
+    </div>
+    <div class="nav-group">
+      <div class="nav-group-label">Análisis</div>
+      <button class="nav-item" onclick="nav('comparativo',this)"><span class="nav-icon">&#8596;</span><span class="nav-label">Comparativo</span></button>
+      <button class="nav-item" onclick="nav('pareto',this)"><span class="nav-icon">&#9650;</span><span class="nav-label">Pareto clientes</span></button>
+      <button class="nav-item" onclick="nav('ticket',this)"><span class="nav-icon">&#9632;</span><span class="nav-label">Ticket promedio</span></button>
+      <button class="nav-item" onclick="nav('margenProm',this)"><span class="nav-icon">&#9644;</span><span class="nav-label">Margen vs prom.</span></button>
+      <button class="nav-item" onclick="nav('mix',this)"><span class="nav-icon">&#9638;</span><span class="nav-label">Mix producto</span></button>
+      <button class="nav-item" onclick="nav('heatmap',this)"><span class="nav-icon">&#9608;</span><span class="nav-label">Heatmap semanal</span></button>
+      <button class="nav-item" onclick="nav('crecimiento',this)"><span class="nav-icon">&#9650;</span><span class="nav-label">Crecimiento</span></button>
+      <button class="nav-item" onclick="nav('nuevosRec',this)"><span class="nav-icon">&#9679;</span><span class="nav-label">Nuevos vs recurrentes</span></button>
+      <button class="nav-item" onclick="nav('rentKilo',this)"><span class="nav-icon">&#9674;</span><span class="nav-label">Rentabilidad / kg</span></button>
+    </div>
+    <div class="nav-group" id="navPipeline" style="display:none">
+      <div class="nav-group-label">Pipeline</div>
+      <button class="nav-item" onclick="nav('estado',this)"><span class="nav-icon">&#9670;</span><span class="nav-label">Detalle estado</span></button>
+      <button class="nav-item" onclick="nav('pipelineBod',this)"><span class="nav-icon">&#9670;</span><span class="nav-label">Pipe por bodega</span></button>
+      <button class="nav-item" onclick="nav('pipelineVend',this)"><span class="nav-icon">&#9670;</span><span class="nav-label">Pipe por vendedor</span></button>
+    </div>
+    <div class="sidebar-footer">
+      <button onclick="resetApp()">&#8635; Nuevo archivo</button>
+    </div>
+  </nav>
+
+  <div class="main">
+    <div class="top-bar">
+      <div class="file-pills" id="filePills"></div>
+      <div class="ctrl-group"><label>Período</label><select id="fPeriodo" onchange="onPeriodoChange()"></select></div>
+      <div class="ctrl-group" id="mesGroup" style="display:none"><label>Mes</label><select id="fMesDia" onchange="onMesDiaChange()"></select></div>
+      <div class="ctrl-group" id="diaGroup" style="display:none"><label>Día</label><select id="fDia"></select></div>
+      <div class="ctrl-group"><label>Bodega</label><select id="fBodega"></select></div>
+      <button class="btn-sm primary" onclick="runAnalysis()">Analizar</button>
+      <button class="btn-sm secondary" id="btnEsc" onclick="toggleSpeak()">&#128265; Escuchar</button>
+      <button class="btn-sm secondary" onclick="downloadCSV()">&#11015; Excel</button>
+    </div>
+    <div class="content" id="mainContent"></div>
+  </div>
+</div>
+
+<script>
+let sabanaData=[],ovData=[],filteredSabana=[],filteredOV=[];
+let sabanaFile='',ovFile='';
+let sabanaStats={},ovStats={},isSpeaking=false,currentTab='ejecutivo';
+
+const fmt=n=>new Intl.NumberFormat('es-CL',{style:'currency',currency:'CLP',minimumFractionDigits:0,maximumFractionDigits:0}).format(Math.round(n));
+const fmtN=n=>new Intl.NumberFormat('es-CL').format(Math.round(n));
+const pct=(n,t)=>t>0?(n/t*100).toFixed(1)+'%':'0%';
+const mesNames={'01':'Enero','02':'Febrero','03':'Marzo','04':'Abril','05':'Mayo','06':'Junio','07':'Julio','08':'Agosto','09':'Septiembre','10':'Octubre','11':'Noviembre','12':'Diciembre'};
+const mesLabel=m=>(mesNames[m.substring(5)]||m)+' '+m.substring(0,4);
+const mesShort=m=>{const s={'01':'Ene','02':'Feb','03':'Mar','04':'Abr','05':'May','06':'Jun','07':'Jul','08':'Ago','09':'Sep','10':'Oct','11':'Nov','12':'Dic'};return(s[m.substring(5)]||m)+' '+m.substring(0,4)};
+const badgeColors=['green','blue','orange','purple','teal','amber','red'];
+const estadoBadge={'Aprobación pendiente':'amber','Ejecución de la orden pendiente':'blue','Facturación pendiente':'green','Facturación pendiente/parcialmente ejecutada':'teal','Parcialmente ejecutada':'orange','Facturada':'green','Cerrada':'purple','Cancelada':'red'};
+const metasMensuales={'01':5816000000,'02':5241000000,'03':6671000000,'04':6066000000,'05':6454000000,'06':6392000000,'07':6687000000,'08':6442000000,'09':6308000000,'10':7072000000,'11':7280000000,'12':6524000000};
+
+function normUbic(u){if(u.includes('AEROPARQUE'))return'Aeroparque';if(u.includes('QUILICURA'))return'Quilicura';if(u.includes('Concepción'))return'Concepción';if(u.includes('SAN FRANCISCO'))return'San Francisco';if(u.includes('EDI'))return'EDI';if(u.includes('INSUMOS'))return'Insumos';if(u.includes('MAQUILADORES'))return'Maquiladores';if(u.includes('LOGISTICA'))return'Log. Inversa';if(u.includes('PACKAGING')||u.includes('PTA'))return'Packaging';if(u.includes('CALIDAD'))return'Calidad';if(u==='Casa Matriz (Dipisa)')return'Casa Matriz';return u;}
+function parseMeta(){const per=document.getElementById('fPeriodo').value;if(per==='all')return 0;if(per==='mes'||per==='dia'){const m=document.getElementById('fMesDia').value;return metasMensuales[m.substring(5)]||0;}return 0;}
+function metaForMonth(mes){return metasMensuales[mes.substring(5)]||0;}
+function diasHabilesRestantes(){const now=new Date();const y=now.getFullYear();const m=now.getMonth();const lastDay=new Date(y,m+1,0).getDate();let count=0;for(let d=now.getDate()+1;d<=lastDay;d++){const dt=new Date(y,m,d);const dow=dt.getDay();if(dow!==0&&dow!==6)count++;}return count;}
+
+// Parsers
+function parseSabana(text){const parser=new DOMParser(),xml=parser.parseFromString(text,'text/xml');const ns='urn:schemas-microsoft-com:office:spreadsheet';const rows=xml.getElementsByTagNameNS(ns,'Row');const data=[];const hCells=rows[6]?.getElementsByTagNameNS(ns,'Cell')||[];const headers=[];for(const c of hCells){const d=c.getElementsByTagNameNS(ns,'Data')[0];headers.push(d?d.textContent:'');}const cm={};headers.forEach((h,i)=>cm[h]=i);for(let r=7;r<rows.length;r++){const cells=rows[r].getElementsByTagNameNS(ns,'Cell');const vals={};let idx=0;for(const cell of cells){const ia=cell.getAttribute('ss:Index');if(ia)idx=parseInt(ia)-1;const d=cell.getElementsByTagNameNS(ns,'Data')[0];vals[idx]=d?d.textContent:'';idx++;}const tipo=vals[cm['Tipo de transacción']]||'';if(!tipo||tipo==='Total')continue;const ubicRaw=vals[cm['Ubicación']]||'';if(ubicRaw==='Total'||ubicRaw.includes('Nº Ubicación'))continue;const fechaRaw=vals[cm['Fecha']]||'';data.push({ubicacion:normUbic(ubicRaw),cliente:vals[cm['Cliente:Trabajo']]||'',vendedor:(vals[cm['Representante de ventas principal: Nombre']]||'').replace(' [DIPISA]',''),tipo,fecha:fechaRaw,mes:fechaRaw?fechaRaw.substring(0,7):'',dia:fechaRaw?fechaRaw.substring(0,10):'',folio:vals[cm['Folio SII']]||'',clase:(vals[cm['Clase']]||'').replace(' [Dipisa]',''),departamento:vals[cm['Departamento']]||'',ingresos:parseFloat(vals[cm['Ingresos totales']]||0),costo:parseFloat(vals[cm['Costo Total']]||0),ganancia:parseFloat(vals[cm['Ganancia $']]||0),kilos:parseFloat(vals[cm['Kilos Venta']]||0)});}return data;}
+function parseOV(text){const parser=new DOMParser(),xml=parser.parseFromString(text,'text/xml');const ns='urn:schemas-microsoft-com:office:spreadsheet';const rows=xml.getElementsByTagNameNS(ns,'Row');const data=[];const hCells=rows[0]?.getElementsByTagNameNS(ns,'Cell')||[];const headers=[];for(const c of hCells){const d=c.getElementsByTagNameNS(ns,'Data')[0];headers.push(d?d.textContent:'');}const cm={};headers.forEach((h,i)=>cm[h]=i);for(let r=1;r<rows.length;r++){const cells=rows[r].getElementsByTagNameNS(ns,'Cell');const vals={};let idx=0;for(const cell of cells){const ia=cell.getAttribute('ss:Index');if(ia)idx=parseInt(ia)-1;const d=cell.getElementsByTagNameNS(ns,'Data')[0];vals[idx]=d?d.textContent:'';idx++;}const estado=vals[cm['Estado']]||'';if(!estado)continue;const ubicRaw=vals[cm['Ubicación']]||'';const fechaRaw=vals[cm['Fecha Compro.']]||vals[cm['Fecha']]||'';data.push({ubicacion:normUbic(ubicRaw),cliente:vals[cm['Nombre']]||'',vendedor:(vals[cm['Representante de ventas']]||'').replace(' [DIPISA]',''),estado,fecha:fechaRaw,mes:fechaRaw?fechaRaw.substring(0,7):'',dia:fechaRaw?fechaRaw.substring(0,10):'',nroDoc:vals[cm['Nro. Doc.']]||'',clase:(vals[cm['Clase']]||'').replace(' [Dipisa]',''),departamento:vals[cm['Departamento']]||'',importe:parseFloat(vals[cm['Importe']]||0),peso:parseFloat(vals[cm['3K - Peso']]||0),cantidad:parseFloat(vals[cm['Cantidad']]||0),ejecucion:parseFloat(vals[cm['Ejecución']]||0)});}return data;}
+
+// Stats
+function computeSabanaStats(data){const fv=data.filter(d=>d.tipo==='Factura de venta'),nc=data.filter(d=>d.tipo==='Nota de crédito');const totalIng=fv.reduce((s,d)=>s+d.ingresos,0),totalNC=nc.reduce((s,d)=>s+Math.abs(d.ingresos),0);const totalCosto=fv.reduce((s,d)=>s+d.costo,0),totalGan=fv.reduce((s,d)=>s+d.ganancia,0);const totalKilos=fv.reduce((s,d)=>s+d.kilos,0);const nFolios=new Set(fv.map(d=>d.folio)).size,nNC=new Set(nc.map(d=>d.folio)).size;const group=(arr,key)=>{const m={};arr.forEach(d=>{const k=d[key]||'(sin dato)';if(!m[k])m[k]={ingresos:0,costo:0,ganancia:0,kilos:0,folios:new Set(),lineas:0};m[k].ingresos+=d.ingresos;m[k].costo+=d.costo;m[k].ganancia+=d.ganancia;m[k].kilos+=d.kilos;m[k].folios.add(d.folio);m[k].lineas++;});return Object.entries(m).map(([k,v])=>({name:k,ingresos:v.ingresos,costo:v.costo,ganancia:v.ganancia,kilos:v.kilos,folios:v.folios.size,lineas:v.lineas,margen:v.ingresos>0?v.ganancia/v.ingresos*100:0})).sort((a,b)=>b.ingresos-a.ingresos);};return{totalIng,totalNC,totalCosto,totalGan,totalKilos,margen:totalIng>0?totalGan/totalIng*100:0,nFolios,nNC,ventaNeta:totalIng-totalNC,nLineas:fv.length,nLineasNC:nc.length,byBodega:group(fv,'ubicacion'),byVendedor:group(fv,'vendedor'),byClase:group(fv,'clase'),byDepto:group(fv,'departamento'),byMes:group(fv,'mes').sort((a,b)=>a.name.localeCompare(b.name)),byCliente:group(fv,'cliente'),byBodegaNC:group(nc,'ubicacion'),byVendedorNC:group(nc,'vendedor')};}
+function computeOVStats(data){const pipeStates=['Aprobación pendiente','Ejecución de la orden pendiente','Facturación pendiente','Parcialmente ejecutada','Facturación pendiente/parcialmente ejecutada'];const pipeline=data.filter(d=>pipeStates.includes(d.estado));const facturada=data.filter(d=>d.estado==='Facturada');const totalPipe=pipeline.reduce((s,d)=>s+d.importe,0);const totalFact=facturada.reduce((s,d)=>s+d.importe,0);const tonPipe=pipeline.reduce((s,d)=>s+d.peso,0);const tonFact=facturada.reduce((s,d)=>s+d.peso,0);const nPipe=new Set(pipeline.map(d=>d.nroDoc)).size;const nFact=new Set(facturada.map(d=>d.nroDoc)).size;const byEstado={};pipeline.forEach(d=>{const e=d.estado;if(!byEstado[e])byEstado[e]={importe:0,peso:0,docs:new Set(),lineas:0};byEstado[e].importe+=d.importe;byEstado[e].peso+=d.peso;byEstado[e].docs.add(d.nroDoc);byEstado[e].lineas++;});const estadoArr=Object.entries(byEstado).map(([k,v])=>({name:k,importe:v.importe,peso:v.peso,docs:v.docs.size,lineas:v.lineas})).sort((a,b)=>b.importe-a.importe);const group=(arr,key)=>{const m={};arr.forEach(d=>{const k=d[key]||'(sin dato)';if(!m[k])m[k]={importe:0,peso:0,docs:new Set()};m[k].importe+=d.importe;m[k].peso+=d.peso;m[k].docs.add(d.nroDoc);});return Object.entries(m).map(([k,v])=>({name:k,importe:v.importe,peso:v.peso,docs:v.docs.size})).sort((a,b)=>b.importe-a.importe);};return{totalPipe,totalFact,tonPipe,tonFact,nPipe,nFact,byEstado:estadoArr,byBodega:group(pipeline,'ubicacion'),byVendedor:group(pipeline,'vendedor'),byClase:group(pipeline,'clase')};}
+
+// Filters
+function populateFilters(){const allMeses=new Set();sabanaData.forEach(d=>{if(d.mes)allMeses.add(d.mes);});ovData.forEach(d=>{if(d.mes)allMeses.add(d.mes);});const meses=[...allMeses].sort();const allBodegas=new Set();sabanaData.forEach(d=>allBodegas.add(d.ubicacion));ovData.forEach(d=>allBodegas.add(d.ubicacion));const bodegas=[...allBodegas].sort();document.getElementById('fPeriodo').innerHTML='<option value="all">Todo el período</option><option value="mes">Por mes</option><option value="dia">Por día</option>';const bSel=document.getElementById('fBodega');bSel.innerHTML='<option value="Todas">Todas</option>';bodegas.forEach(b=>{bSel.innerHTML+=`<option value="${b}">${b}</option>`;});const mSel=document.getElementById('fMesDia');mSel.innerHTML='';meses.forEach(m=>{mSel.innerHTML+=`<option value="${m}">${mesLabel(m)}</option>`;});}
+function onPeriodoChange(){const v=document.getElementById('fPeriodo').value;document.getElementById('mesGroup').style.display=(v==='mes'||v==='dia')?'':'none';document.getElementById('diaGroup').style.display=v==='dia'?'':'none';if(v==='mes'||v==='dia')onMesDiaChange();}
+function onMesDiaChange(){const mes=document.getElementById('fMesDia').value;const allDias=new Set();sabanaData.filter(d=>d.mes===mes).forEach(d=>{if(d.dia)allDias.add(d.dia);});ovData.filter(d=>d.mes===mes).forEach(d=>{if(d.dia)allDias.add(d.dia);});const dias=[...allDias].sort();const dSel=document.getElementById('fDia');dSel.innerHTML='';dias.forEach(d=>{const p=d.split('-');dSel.innerHTML+=`<option value="${d}">${parseInt(p[2])} ${(mesNames[p[1]]||'').substring(0,3)} ${p[0]}</option>`;});}
+function applyFilters(){const per=document.getElementById('fPeriodo').value;const bod=document.getElementById('fBodega').value;const mesVal=document.getElementById('fMesDia').value;const diaVal=document.getElementById('fDia').value;const filter=d=>{if(per==='dia'&&d.dia!==diaVal)return false;else if(per==='mes'&&d.mes!==mesVal)return false;if(bod!=='Todas'&&d.ubicacion!==bod)return false;return true;};filteredSabana=sabanaData.filter(filter);filteredOV=ovData.filter(filter);}
+function getLabel(){const per=document.getElementById('fPeriodo').value;const bod=document.getElementById('fBodega').value;const mesVal=document.getElementById('fMesDia').value;const diaVal=document.getElementById('fDia').value;const label=[];if(per==='dia'){const p=diaVal.split('-');label.push((parseInt(p[2])+' '+(mesNames[p[1]]||'')+' '+p[0]).toUpperCase());}else if(per==='mes')label.push(mesLabel(mesVal).toUpperCase());else label.push('TODO EL PERÍODO');if(bod!=='Todas')label.push(bod.toUpperCase());else label.push('TODAS LAS BODEGAS');return label.join(' · ');}
+
+// Navigation
+function nav(tab,btn){currentTab=tab;document.querySelectorAll('.nav-item').forEach(b=>b.classList.remove('active'));if(btn)btn.classList.add('active');renderTab();}
+function renderTab(){
+  const ss=sabanaStats,os=ovStats,el=document.getElementById('mainContent'),label=getLabel();
+  const now=new Date(),curMes=now.getFullYear()+'-'+String(now.getMonth()+1).padStart(2,'0');
+  const per=document.getElementById('fPeriodo').value;
+  const selMes=per==='mes'||per==='dia'?document.getElementById('fMesDia').value:'all';
+  const isPast=selMes<curMes&&selMes!=='all';
+  const meta=parseMeta(),pipeVal=ovData.length?os.totalPipe:0;
+  let html='';
+  const titles={ejecutivo:'Resumen ejecutivo',meta:'Meta y ritmo',alertas:'Alertas',bodega:'Facturación por bodega',vendedor:'Facturación por vendedor',clase:'Facturación por clase',mes:'Evolución mensual',clientes:'Top clientes',nc:'Notas de crédito',departamento:'Por departamento',comparativo:'Comparativo mes a mes',pareto:'Concentración de clientes',ticket:'Ticket promedio',margenProm:'Margen vs promedio',mix:'Mix de producto',heatmap:'Heatmap semanal',crecimiento:'Ranking de crecimiento',nuevosRec:'Clientes nuevos vs recurrentes',rentKilo:'Rentabilidad por kilo',estado:'Pipeline — Detalle estado',pipelineBod:'Pipeline por bodega',pipelineVend:'Pipeline por vendedor'};
+  html+=`<div class="page-title">${titles[currentTab]||currentTab}</div><div class="page-sub">${label}</div>`;
+
+  const makeTable=(title,headers,rows,totalRow)=>{let h=`<div class="data-section"><div class="title">${title}</div><table class="dt"><tr>`;headers.forEach(hd=>{h+=`<th class="${hd.num?'num':''}" ${hd.w?'style="width:'+hd.w+'"':''}>${hd.label}</th>`;});h+='</tr>';rows.forEach(r=>{h+='<tr>';r.forEach((c,i)=>{h+=`<td class="${headers[i].num?'num':''}">${c}</td>`;});h+='</tr>';});if(totalRow){h+='<tr class="total-row">';totalRow.forEach((c,i)=>{h+=`<td class="${headers[i].num?'num':''}">${c}</td>`;});h+='</tr>';}h+='</table></div>';return h;};
+  const barCol=(val,total,color)=>{const w=total>0?(val/total*100):0;return`<div class="bar-cell"><div class="bar-track"><div class="bar-fill ${color}" style="width:${w}%"></div></div><span class="bar-pct">${w.toFixed(1)}%</span></div>`;};
+
+  if(currentTab==='ejecutivo'){
+    // When filtering by day, calculate MTD (month-to-date) for meta avance
+    let mtdNeta=ss.ventaNeta;
+    const diaVal=document.getElementById('fDia').value;
+    const bod=document.getElementById('fBodega').value;
+    if(per==='dia'&&meta>0){
+      const mesSel=document.getElementById('fMesDia').value;
+      const mtdData=sabanaData.filter(d=>{
+        if(d.mes!==mesSel)return false;
+        if(d.dia>diaVal)return false;
+        if(bod!=='Todas'&&d.ubicacion!==bod)return false;
+        return true;
+      });
+      const mtdIng=mtdData.filter(d=>d.tipo==='Factura de venta').reduce((s,d)=>s+d.ingresos,0);
+      const mtdNC=mtdData.filter(d=>d.tipo==='Nota de crédito').reduce((s,d)=>s+Math.abs(d.ingresos),0);
+      mtdNeta=mtdIng-mtdNC;
+    }
+    const avance=meta>0?mtdNeta/meta*100:0;const falta=meta-mtdNeta;const diasH=diasHabilesRestantes();
+    const mtdLabel=per==='dia'?` (acumulado al ${diaVal.split('-')[2]}/${diaVal.split('-')[1]})`:'';
+    const metaSub=meta>0?(isPast?(falta>0?`No se logró: faltaron ${fmt(falta)}`:`Superada por ${fmt(Math.abs(falta))}`):`Faltan ${fmt(Math.max(0,falta))}${mtdLabel}`):'';
+    html+=`<div class="exec-grid">
+      <div class="exec-card"><div class="stripe" style="background:var(--purple)"></div><div class="ec-label">Proyección</div><div class="ec-val" style="color:var(--purple)">${fmt(ss.ventaNeta+pipeVal)}</div><div class="ec-sub">Venta neta + Pipeline</div></div>
+      <div class="exec-card"><div class="stripe" style="background:var(--green)"></div><div class="ec-label">Venta neta${per==='dia'?' (día)':''}</div><div class="ec-val" style="color:var(--green)">${fmt(ss.ventaNeta)}</div><div class="ec-sub">${fmtN(ss.nFolios)} facturas</div></div>
+      <div class="exec-card"><div class="stripe" style="background:var(--blue)"></div><div class="ec-label">Margen</div><div class="ec-val" style="color:var(--blue)">${Math.round(ss.margen)}%</div><div class="ec-sub">Ganancia: ${fmt(ss.totalGan)}</div></div>
+      <div class="exec-card"><div class="stripe" style="background:var(--orange)"></div><div class="ec-label">NC / Ventas</div><div class="ec-val" style="color:var(--orange)">${pct(ss.totalNC,ss.totalIng)}</div><div class="ec-sub">${fmtN(ss.nNC)} NC: ${fmt(ss.totalNC)}</div></div>
+      ${meta>0?`<div class="exec-card"><div class="stripe" style="background:${avance>=100?'var(--green)':avance>=70?'var(--amber)':'var(--red)'}"></div><div class="ec-label">${isPast?'Resultado meta':'Avance meta'}${per==='dia'?' (MTD)':''}</div><div class="ec-val" style="color:${avance>=100?'var(--green)':avance>=70?'var(--amber)':'var(--red)'}">${avance.toFixed(1)}%</div><div class="ec-sub">${metaSub}</div></div>`:''}
+      ${per==='dia'&&meta>0?`<div class="exec-card"><div class="stripe" style="background:var(--green)"></div><div class="ec-label">Acumulado mes</div><div class="ec-val" style="color:var(--green)">${fmt(mtdNeta)}</div><div class="ec-sub">Hasta el ${parseInt(diaVal.split('-')[2])} del mes</div></div>`:''}
+      ${ovData.length?`<div class="exec-card"><div class="stripe" style="background:var(--blue)"></div><div class="ec-label">Pipeline</div><div class="ec-val" style="color:var(--blue)">${fmt(pipeVal)}</div><div class="ec-sub">${fmtN(os.nPipe)} OVs</div></div>`:''}
+    </div>`;
+    if(meta>0){const pFill=Math.min(avance,100);html+=`<div class="data-section" style="padding:16px 18px"><div class="title" style="padding:0 0 8px">${isPast?'Resultado vs meta':'Avance hacia la meta'}${per==='dia'?' (acumulado del mes)':''}: ${fmt(meta)}</div><div class="progress-wrap"><div class="progress-bar"><div class="progress-fill" style="width:${pFill}%;background:${avance>=100?'var(--green)':avance>=70?'var(--amber)':'var(--red)'}"></div><div class="progress-label">${avance.toFixed(1)}%</div></div></div><div style="display:flex;justify-content:space-between;font-size:11px;color:var(--text2);margin-top:6px">${isPast?`<span>${falta>0?'Meta no alcanzada':'Meta superada'}</span><span>${falta>0?'Faltaron '+fmt(falta):'Excedente '+fmt(Math.abs(falta))}</span>`:`<span>${diasH} días hábiles restantes</span><span>Ritmo: ${fmt(Math.max(0,falta/Math.max(diasH,1)))}/día</span>`}</div></div>`;}
+    const topBod=ss.byBodega[0],topCli=ss.byCliente[0];
+    if(topBod)html+=`<div style="font-size:12px;color:var(--text2);margin-top:4px">Top bodega: <b>${topBod.name}</b> (${fmt(topBod.ingresos)}) · Top cliente: <b>${(topCli?.name||'').substring(0,30)}</b> (${fmt(topCli?.ingresos||0)})</div>`;
+    // Chart: Monthly Venta Neta vs Meta
+    if(ss.byMes.length>1){
+      const allMeses=[...new Set(sabanaData.filter(d=>d.tipo==='Factura de venta').map(d=>d.mes))].sort();
+      const chartData=allMeses.map(m=>{const fvM=sabanaData.filter(d=>d.tipo==='Factura de venta'&&d.mes===m);const ncM=sabanaData.filter(d=>d.tipo==='Nota de crédito'&&d.mes===m);const ing=fvM.reduce((s,d)=>s+d.ingresos,0);const nc=ncM.reduce((s,d)=>s+Math.abs(d.ingresos),0);return{mes:m,neta:ing-nc,meta:metaForMonth(m)};});
+      const maxVal=Math.max(...chartData.flatMap(d=>[d.neta,d.meta]))*1.1;
+      const cW=Math.max(600,chartData.length*100),cH=220,padL=70,padR=20,padT=20,padB=40;
+      const plotW=cW-padL-padR,plotH=cH-padT-padB;
+      const barW=plotW/chartData.length;
+      let svg=`<div class="data-section" style="padding:18px"><div class="title" style="padding:0 0 12px">Venta neta vs meta mensual</div><svg viewBox="0 0 ${cW} ${cH}" style="width:100%;max-width:${cW}px;font-family:var(--font)">`;
+      // Grid lines
+      for(let i=0;i<=4;i++){const y=padT+plotH*(1-i/4);const val=maxVal*i/4;svg+=`<line x1="${padL}" y1="${y}" x2="${cW-padR}" y2="${y}" stroke="#e5e5e0" stroke-width="0.5"/><text x="${padL-8}" y="${y+4}" text-anchor="end" font-size="9" fill="#9c9b95">${(val/1e9).toFixed(1)}B</text>`;}
+      // Bars
+      chartData.forEach((d,i)=>{
+        const x=padL+i*barW;const bw=barW*0.35;
+        const hMeta=maxVal>0?(d.meta/maxVal)*plotH:0;
+        const hNeta=maxVal>0?(d.neta/maxVal)*plotH:0;
+        const colNeta=d.neta>=d.meta?'#16a34a':'#ea580c';
+        svg+=`<rect x="${x+barW*0.1}" y="${padT+plotH-hMeta}" width="${bw}" height="${hMeta}" fill="#e5e5e0" rx="3"/>`;
+        svg+=`<rect x="${x+barW*0.1+bw+2}" y="${padT+plotH-hNeta}" width="${bw}" height="${hNeta}" fill="${colNeta}" rx="3"/>`;
+        const ml=mesShort(d.mes).split(' ')[0];
+        svg+=`<text x="${x+barW/2}" y="${cH-8}" text-anchor="middle" font-size="10" fill="#6b6a65">${ml}</text>`;
+      });
+      // Legend
+      svg+=`<rect x="${padL}" y="${cH-12}" width="10" height="10" fill="#e5e5e0" rx="2"/><text x="${padL+14}" y="${cH-3}" font-size="9" fill="#6b6a65">Meta</text>`;
+      svg+=`<rect x="${padL+60}" y="${cH-12}" width="10" height="10" fill="#16a34a" rx="2"/><text x="${padL+74}" y="${cH-3}" font-size="9" fill="#6b6a65">Venta neta</text>`;
+      svg+=`</svg></div>`;
+      html+=svg;
+    }
+  }
+  else if(currentTab==='meta'){
+    html+=`<div class="data-section"><div class="title">Cumplimiento de meta por mes</div><table class="dt"><tr><th>Mes</th><th class="num">Meta</th><th class="num">Venta neta</th><th class="num">Avance</th><th class="num">Resultado</th><th style="width:140px">Progreso</th></tr>`;
+    ss.byMes.forEach((m,i)=>{const metaM=metaForMonth(m.name);const ncMes=sabanaData.filter(d=>d.tipo==='Nota de crédito'&&d.mes===m.name).reduce((s,d)=>s+Math.abs(d.ingresos),0);const neta=m.ingresos-ncMes;const av=metaM>0?(neta/metaM*100):0;const falta=metaM-neta;const col=av>=100?'green':av>=70?'amber':'red';const isPastM=m.name<curMes;const resultado=isPastM?(falta>0?`<span style="color:var(--red)">No lograda: ${fmt(falta)}</span>`:`<span style="color:var(--green)">Superada: +${fmt(Math.abs(falta))}</span>`):`<span>Faltan ${fmt(Math.max(0,falta))}</span>`;html+=`<tr><td><span class="badge ${badgeColors[i%7]}">${mesShort(m.name)}</span></td><td class="num">${fmt(metaM)}</td><td class="num">${fmt(neta)}</td><td class="num"><span class="alert-badge ${col}">${av.toFixed(1)}%</span></td><td class="num">${resultado}</td><td><div class="bar-cell"><div class="bar-track"><div class="bar-fill ${col}" style="width:${Math.min(av,100)}%"></div></div><span class="bar-pct">${av.toFixed(0)}%</span></div></td></tr>`;});
+    html+=`</table></div>`;
+    if(ss.byMes.length){const lastMes=ss.byMes[ss.byMes.length-1];const metaLast=metaForMonth(lastMes.name);const ncLast=sabanaData.filter(d=>d.tipo==='Nota de crédito'&&d.mes===lastMes.name).reduce((s,d)=>s+Math.abs(d.ingresos),0);const netaLast=lastMes.ingresos-ncLast;const faltaLast=metaLast-netaLast;if(lastMes.name<curMes){html+=`<div class="data-section" style="padding:16px 18px"><div class="title" style="padding:0 0 6px;color:${faltaLast>0?'var(--red)':'var(--green)'}">${faltaLast>0?'No se logró la meta':'Meta cumplida'} — ${mesShort(lastMes.name)}</div><div style="font-size:14px">${faltaLast>0?`Faltaron <b style="color:var(--red)">${fmt(faltaLast)}</b> para alcanzar los ${fmt(metaLast)}`:`Se superó por <b style="color:var(--green)">${fmt(Math.abs(faltaLast))}</b> sobre los ${fmt(metaLast)}`}</div></div>`;}else{const diasH=diasHabilesRestantes();if(diasH>0&&faltaLast>0){html+=`<div class="data-section" style="padding:16px 18px"><div class="title" style="padding:0 0 6px">Ritmo necesario — ${mesShort(lastMes.name)}</div><div style="font-size:14px">Meta: <b>${fmt(metaLast)}</b> · Faltan <b>${fmt(faltaLast)}</b> en <b>${diasH}</b> días hábiles → <b>${fmt(faltaLast/diasH)}</b>/día</div></div>`;}else if(faltaLast<=0){html+=`<div class="data-section" style="padding:16px 18px"><div class="title" style="padding:0 0 6px;color:var(--green)">Meta cumplida — ${mesShort(lastMes.name)}</div><div style="font-size:14px">Superada por <b style="color:var(--green)">${fmt(Math.abs(faltaLast))}</b></div></div>`;}}}
+  }
+  else if(currentTab==='alertas'){
+    html+=`<div class="data-section"><div class="title">Alertas por bodega</div><table class="dt"><tr><th>Bodega</th><th class="num">Margen</th><th>Estado</th><th class="num">NC/Ventas</th><th>Estado</th></tr>`;
+    ss.byBodega.forEach((b,i)=>{const ncB=filteredSabana.filter(d=>d.tipo==='Nota de crédito'&&d.ubicacion===b.name).reduce((s,d)=>s+Math.abs(d.ingresos),0);const rNC=b.ingresos>0?(ncB/b.ingresos*100):0;const cM=b.margen>=20?'green':b.margen>=15?'amber':'red';const cN=rNC<=3?'green':rNC<=5?'amber':'red';html+=`<tr><td><span class="badge ${badgeColors[i%7]}">${b.name}</span></td><td class="num">${b.margen.toFixed(1)}%</td><td><span class="alert-badge ${cM}"><span class="alert-dot ${cM}"></span>${cM==='green'?'OK':cM==='amber'?'Atención':'Crítico'}</span></td><td class="num">${rNC.toFixed(1)}%</td><td><span class="alert-badge ${cN}"><span class="alert-dot ${cN}"></span>${cN==='green'?'OK':cN==='amber'?'Atención':'Crítico'}</span></td></tr>`;});
+    html+=`</table></div>`;
+    html+=`<div class="data-section"><div class="title">Alertas por vendedor</div><table class="dt"><tr><th>Vendedor</th><th class="num">Margen</th><th>Alerta</th><th class="num">NC/Ventas</th><th>Alerta</th></tr>`;
+    ss.byVendedor.forEach((v,i)=>{const ncV=filteredSabana.filter(d=>d.tipo==='Nota de crédito'&&d.vendedor===v.name).reduce((s,d)=>s+Math.abs(d.ingresos),0);const rNC=v.ingresos>0?(ncV/v.ingresos*100):0;const cM=v.margen>=20?'green':v.margen>=15?'amber':'red';const cN=rNC<=3?'green':rNC<=5?'amber':'red';html+=`<tr><td><span class="badge ${badgeColors[i%7]}">${v.name}</span></td><td class="num">${v.margen.toFixed(1)}%</td><td><span class="alert-badge ${cM}"><span class="alert-dot ${cM}"></span>${cM==='green'?'OK':cM==='amber'?'Atención':'Crítico'}</span></td><td class="num">${rNC.toFixed(1)}%</td><td><span class="alert-badge ${cN}"><span class="alert-dot ${cN}"></span>${cN==='green'?'OK':cN==='amber'?'Atención':'Crítico'}</span></td></tr>`;});
+    html+=`</table></div><div style="font-size:10px;color:var(--text3)">Margen: ≥20% OK · 15-20% Atención · &lt;15% Crítico — NC/Ventas: ≤3% OK · 3-5% Atención · &gt;5% Crítico</div>`;
+  }
+  else if(currentTab==='bodega'){const hd=[{label:'Bodega'},{label:'Facturas',num:1},{label:'Ingresos',num:1},{label:'Costo',num:1},{label:'Ganancia',num:1},{label:'Margen',num:1},{label:'Peso',w:'130px'}];const rows=ss.byBodega.map((b,i)=>[`<span class="badge ${badgeColors[i%7]}">${b.name}</span>`,fmtN(b.folios),fmt(b.ingresos),fmt(b.costo),fmt(b.ganancia),Math.round(b.margen)+'%',barCol(b.ingresos,ss.totalIng,badgeColors[i%7])]);html+=makeTable('',hd,rows,['Total',fmtN(ss.nFolios),fmt(ss.totalIng),fmt(ss.totalCosto),fmt(ss.totalGan),Math.round(ss.margen)+'%','']);}
+  else if(currentTab==='vendedor'){html+=makeTable('',[{label:'Vendedor'},{label:'Facturas',num:1},{label:'Ingresos',num:1},{label:'Ganancia',num:1},{label:'Margen',num:1},{label:'Peso',w:'130px'}],ss.byVendedor.map((v,i)=>[`<span class="badge ${badgeColors[i%7]}">${v.name}</span>`,fmtN(v.folios),fmt(v.ingresos),fmt(v.ganancia),Math.round(v.margen)+'%',barCol(v.ingresos,ss.totalIng,badgeColors[i%7])]));}
+  else if(currentTab==='clase'){html+=makeTable('',[{label:'Clase'},{label:'Facturas',num:1},{label:'Ingresos',num:1},{label:'Ganancia',num:1},{label:'Margen',num:1},{label:'Peso',w:'130px'}],ss.byClase.map((c,i)=>[`<span class="badge ${badgeColors[i%7]}">${c.name}</span>`,fmtN(c.folios),fmt(c.ingresos),fmt(c.ganancia),Math.round(c.margen)+'%',barCol(c.ingresos,ss.totalIng,badgeColors[i%7])]));}
+  else if(currentTab==='mes'){html+=makeTable('',[{label:'Mes'},{label:'Facturas',num:1},{label:'Ingresos',num:1},{label:'Ganancia',num:1},{label:'Margen',num:1},{label:'Kilos',num:1},{label:'Peso',w:'130px'}],ss.byMes.map((m,i)=>[`<span class="badge ${badgeColors[i%7]}">${mesShort(m.name)}</span>`,fmtN(m.folios),fmt(m.ingresos),fmt(m.ganancia),Math.round(m.margen)+'%',fmtN(m.kilos),barCol(m.ingresos,ss.totalIng,badgeColors[i%7])]),['Total',fmtN(ss.nFolios),fmt(ss.totalIng),fmt(ss.totalGan),Math.round(ss.margen)+'%',fmtN(ss.totalKilos),'']);}
+  else if(currentTab==='clientes'){html+=makeTable('',[{label:'Cliente'},{label:'Facturas',num:1},{label:'Ingresos',num:1},{label:'Ganancia',num:1},{label:'Margen',num:1},{label:'Peso',w:'130px'}],ss.byCliente.slice(0,20).map((c,i)=>[c.name.substring(0,45),fmtN(c.folios),fmt(c.ingresos),fmt(c.ganancia),Math.round(c.margen)+'%',barCol(c.ingresos,ss.totalIng,badgeColors[i%7])]));}
+  else if(currentTab==='nc'){html+=makeTable('NC por bodega',[{label:'Bodega'},{label:'NC',num:1},{label:'Monto',num:1},{label:'Peso',w:'130px'}],ss.byBodegaNC.map((b,i)=>[`<span class="badge ${badgeColors[i%7]}">${b.name}</span>`,fmtN(b.folios),fmt(Math.abs(b.ingresos)),barCol(Math.abs(b.ingresos),ss.totalNC,badgeColors[i%7])]))+makeTable('NC por vendedor',[{label:'Vendedor'},{label:'NC',num:1},{label:'Monto',num:1},{label:'Peso',w:'130px'}],ss.byVendedorNC.map((v,i)=>[`<span class="badge ${badgeColors[i%7]}">${v.name}</span>`,fmtN(v.folios),fmt(Math.abs(v.ingresos)),barCol(Math.abs(v.ingresos),ss.totalNC,badgeColors[i%7])]));}
+  else if(currentTab==='departamento'){html+=makeTable('',[{label:'Departamento'},{label:'Ingresos',num:1},{label:'Ganancia',num:1},{label:'Margen',num:1},{label:'Peso',w:'130px'}],ss.byDepto.slice(0,15).map((d,i)=>[`<span class="badge ${badgeColors[i%7]}">${d.name}</span>`,fmt(d.ingresos),fmt(d.ganancia),Math.round(d.margen)+'%',barCol(d.ingresos,ss.totalIng,badgeColors[i%7])]));}
+  else if(currentTab==='comparativo'){
+    const meses=[...new Set(sabanaData.filter(d=>d.tipo==='Factura de venta').map(d=>d.mes))].sort();
+    if(meses.length<2){html+='<div class="data-section" style="padding:20px"><div class="title">Se necesitan al menos 2 meses</div></div>';}
+    else{html+=`<div class="data-section"><div class="title">Variación mensual</div><table class="dt"><tr><th>Mes</th><th class="num">Ingresos</th><th class="num">Var $</th><th class="num">Var %</th><th class="num">Facturas</th><th class="num">Margen</th></tr>`;let prev=null;meses.forEach((m,i)=>{const fv=sabanaData.filter(d=>d.tipo==='Factura de venta'&&d.mes===m);const ing=fv.reduce((s,d)=>s+d.ingresos,0);const gan=fv.reduce((s,d)=>s+d.ganancia,0);const nFol=new Set(fv.map(d=>d.folio)).size;const margen=ing>0?gan/ing*100:0;const varD=prev?ing-prev.ing:0;const varP=prev&&prev.ing>0?((ing-prev.ing)/prev.ing*100):0;const col=varD>0?'green':varD<0?'red':'';html+=`<tr><td><span class="badge ${badgeColors[i%7]}">${mesShort(m)}</span></td><td class="num">${fmt(ing)}</td><td class="num" style="color:var(--${col})">${prev?(varD>0?'+':'')+fmt(varD):'—'}</td><td class="num" style="color:var(--${col})">${prev?(varP>0?'+':'')+varP.toFixed(1)+'%':'—'}</td><td class="num">${fmtN(nFol)}</td><td class="num">${Math.round(margen)}%</td></tr>`;prev={ing};});html+=`</table></div>`;
+    const m1=meses[meses.length-2],m2=meses[meses.length-1];html+=`<div class="data-section"><div class="title">${mesShort(m1)} vs ${mesShort(m2)} por bodega</div><table class="dt"><tr><th>Bodega</th><th class="num">${mesShort(m1)}</th><th class="num">${mesShort(m2)}</th><th class="num">Variación</th></tr>`;const bods=new Set();sabanaData.filter(d=>d.tipo==='Factura de venta'&&(d.mes===m1||d.mes===m2)).forEach(d=>bods.add(d.ubicacion));[...bods].sort().forEach((b,i)=>{const v1=sabanaData.filter(d=>d.tipo==='Factura de venta'&&d.mes===m1&&d.ubicacion===b).reduce((s,d)=>s+d.ingresos,0);const v2=sabanaData.filter(d=>d.tipo==='Factura de venta'&&d.mes===m2&&d.ubicacion===b).reduce((s,d)=>s+d.ingresos,0);const vr=v1>0?((v2-v1)/v1*100):0;const col=vr>0?'green':vr<0?'red':'';html+=`<tr><td><span class="badge ${badgeColors[i%7]}">${b}</span></td><td class="num">${fmt(v1)}</td><td class="num">${fmt(v2)}</td><td class="num" style="color:var(--${col})">${(vr>0?'+':'')+vr.toFixed(1)}%</td></tr>`;});html+=`</table></div>`;}
+  }
+  else if(currentTab==='pareto'){
+    const sorted=[...ss.byCliente];let cum=0,n80=0;
+    html+=`<div class="data-section"><div class="title">Concentración de clientes (Pareto)</div><table class="dt"><tr><th>#</th><th>Cliente</th><th class="num">Ingresos</th><th class="num">% ind.</th><th class="num">% acum.</th><th style="width:120px">Acumulado</th></tr>`;
+    sorted.forEach((c,i)=>{cum+=c.ingresos;const pI=(c.ingresos/ss.totalIng*100);const pC=(cum/ss.totalIng*100);if(pC<=80.1)n80=i+1;if(i<25){const col=pC<=80?'green':pC<=95?'amber':'red';html+=`<tr><td>${i+1}</td><td style="font-size:11px">${c.name.substring(0,40)}</td><td class="num">${fmt(c.ingresos)}</td><td class="num">${pI.toFixed(1)}%</td><td class="num"><span class="alert-badge ${col}">${pC.toFixed(1)}%</span></td><td><div class="bar-cell"><div class="bar-track"><div class="bar-fill blue" style="width:${pC}%"></div></div></div></td></tr>`;}});
+    html+=`</table></div><div class="data-section" style="padding:16px 18px"><div class="title" style="padding:0 0 4px">Resumen</div><div style="font-size:13px"><b>${n80}</b> clientes (${(n80/sorted.length*100).toFixed(1)}%) generan el 80% de ingresos. Total activos: <b>${sorted.length}</b></div></div>`;
+  }
+  else if(currentTab==='ticket'){html+=makeTable('Por vendedor',[{label:'Vendedor'},{label:'Facturas',num:1},{label:'Ingresos',num:1},{label:'Ticket prom.',num:1},{label:'Líneas/fact.',num:1}],ss.byVendedor.map((v,i)=>[`<span class="badge ${badgeColors[i%7]}">${v.name}</span>`,fmtN(v.folios),fmt(v.ingresos),fmt(v.folios>0?v.ingresos/v.folios:0),(v.folios>0?(v.lineas/v.folios).toFixed(1):'0')]))+makeTable('Por bodega',[{label:'Bodega'},{label:'Facturas',num:1},{label:'Ingresos',num:1},{label:'Ticket prom.',num:1}],ss.byBodega.map((b,i)=>[`<span class="badge ${badgeColors[i%7]}">${b.name}</span>`,fmtN(b.folios),fmt(b.ingresos),fmt(b.folios>0?b.ingresos/b.folios:0)]));}
+  else if(currentTab==='margenProm'){
+    const avg=ss.margen;
+    html+=`<div class="data-section"><div class="title">Margen por bodega vs promedio (${avg.toFixed(1)}%)</div><table class="dt"><tr><th>Bodega</th><th class="num">Ingresos</th><th class="num">Margen</th><th class="num">vs Prom.</th><th>Estado</th></tr>`;
+    ss.byBodega.forEach((b,i)=>{const diff=b.margen-avg;const col=diff>=2?'green':diff>=-2?'amber':'red';html+=`<tr><td><span class="badge ${badgeColors[i%7]}">${b.name}</span></td><td class="num">${fmt(b.ingresos)}</td><td class="num">${b.margen.toFixed(1)}%</td><td class="num" style="color:var(--${col})">${(diff>0?'+':'')+diff.toFixed(1)}pp</td><td><span class="alert-badge ${col}"><span class="alert-dot ${col}"></span>${diff>=2?'Sobre':diff>=-2?'Normal':'Bajo'}</span></td></tr>`;});
+    html+=`</table></div>`;
+    html+=makeTable('Margen por vendedor vs promedio',[{label:'Vendedor'},{label:'Margen',num:1},{label:'vs Prom.',num:1},{label:'Estado'}],ss.byVendedor.map((v,i)=>{const diff=v.margen-avg;const col=diff>=2?'green':diff>=-2?'amber':'red';return[`<span class="badge ${badgeColors[i%7]}">${v.name}</span>`,v.margen.toFixed(1)+'%',`<span style="color:var(--${col})">${(diff>0?'+':'')+diff.toFixed(1)}pp</span>`,`<span class="alert-badge ${col}"><span class="alert-dot ${col}"></span>${diff>=2?'Sobre':diff>=-2?'Normal':'Bajo'}</span>`];}));
+  }
+  else if(currentTab==='mix'){
+    const meses=[...new Set(sabanaData.filter(d=>d.tipo==='Factura de venta').map(d=>d.mes))].sort();const clases=[...new Set(sabanaData.filter(d=>d.tipo==='Factura de venta').map(d=>d.clase))];
+    html+=`<div class="data-section"><div class="title">Mix de producto por mes</div><table class="dt"><tr><th>Clase</th>`;meses.forEach(m=>{html+=`<th class="num">${mesShort(m)}</th>`;});if(meses.length>=2)html+=`<th class="num">Var</th>`;html+=`</tr>`;
+    clases.sort((a,b)=>{const va=sabanaData.filter(d=>d.tipo==='Factura de venta'&&d.clase===a).reduce((s,d)=>s+d.ingresos,0);const vb=sabanaData.filter(d=>d.tipo==='Factura de venta'&&d.clase===b).reduce((s,d)=>s+d.ingresos,0);return vb-va;}).forEach((cl,i)=>{html+=`<tr><td><span class="badge ${badgeColors[i%7]}">${cl}</span></td>`;let vals=[];meses.forEach(m=>{const v=sabanaData.filter(d=>d.tipo==='Factura de venta'&&d.clase===cl&&d.mes===m).reduce((s,d)=>s+d.ingresos,0);vals.push(v);html+=`<td class="num">${fmt(v)}</td>`;});if(meses.length>=2){const last=vals[vals.length-1],prev2=vals[vals.length-2];const vr=prev2>0?((last-prev2)/prev2*100):0;const col=vr>0?'green':vr<0?'red':'';html+=`<td class="num" style="color:var(--${col})">${(vr>0?'+':'')+vr.toFixed(0)}%</td>`;}html+=`</tr>`;});html+=`</table></div>`;
+  }
+  else if(currentTab==='heatmap'){
+    const diasSemana=['Lun','Mar','Mié','Jue','Vie','Sáb','Dom'];const fv=filteredSabana.filter(d=>d.tipo==='Factura de venta'&&d.fecha);const byDay={0:0,1:0,2:0,3:0,4:0,5:0,6:0};const countDay={0:0,1:0,2:0,3:0,4:0,5:0,6:0};fv.forEach(d=>{const dt=new Date(d.fecha);const dow=(dt.getDay()+6)%7;byDay[dow]+=d.ingresos;countDay[dow]++;});const maxDay=Math.max(...Object.values(byDay));const totalFilt=fv.reduce((s,d)=>s+d.ingresos,0);
+    html+=`<div class="data-section"><div class="title">Distribución por día de semana</div><table class="dt"><tr><th>Día</th><th class="num">Líneas</th><th class="num">Ingresos</th><th class="num">% total</th><th style="width:100px">Intensidad</th></tr>`;
+    for(let i=0;i<7;i++){const pctV=totalFilt>0?(byDay[i]/totalFilt*100):0;const heat=maxDay>0?Math.ceil(byDay[i]/maxDay*5):0;html+=`<tr><td><b>${diasSemana[i]}</b></td><td class="num">${fmtN(countDay[i])}</td><td class="num">${fmt(byDay[i])}</td><td class="num">${pctV.toFixed(1)}%</td><td><div class="heatmap-cell heat-${heat}">${pctV.toFixed(0)}%</div></td></tr>`;}html+=`</table></div>`;
+  }
+  else if(currentTab==='crecimiento'){
+    const meses=[...new Set(sabanaData.filter(d=>d.tipo==='Factura de venta').map(d=>d.mes))].sort();
+    if(meses.length<2){html+='<div class="data-section" style="padding:20px"><div class="title">Se necesitan al menos 2 meses</div></div>';}
+    else{const m1=meses[meses.length-2],m2=meses[meses.length-1];const vendGrowth=[];ss.byVendedor.forEach(v=>{const v1=sabanaData.filter(d=>d.tipo==='Factura de venta'&&d.mes===m1&&d.vendedor===v.name).reduce((s,d)=>s+d.ingresos,0);const v2=sabanaData.filter(d=>d.tipo==='Factura de venta'&&d.mes===m2&&d.vendedor===v.name).reduce((s,d)=>s+d.ingresos,0);const growth=v1>0?((v2-v1)/v1*100):v2>0?100:0;vendGrowth.push({name:v.name,v1,v2,growth,diff:v2-v1});});vendGrowth.sort((a,b)=>b.growth-a.growth);
+    html+=makeTable(`${mesShort(m1)} → ${mesShort(m2)}`,[{label:'Vendedor'},{label:mesShort(m1),num:1},{label:mesShort(m2),num:1},{label:'Var $',num:1},{label:'Crecimiento',num:1}],vendGrowth.map((v,i)=>{const col=v.growth>0?'green':v.growth<0?'red':'';return[`<span class="badge ${badgeColors[i%7]}">${v.name}</span>`,fmt(v.v1),fmt(v.v2),`<span style="color:var(--${col})">${(v.diff>0?'+':'')+fmt(v.diff)}</span>`,`<span class="alert-badge ${v.growth>0?'green':v.growth<0?'red':'amber'}">${(v.growth>0?'+':'')+v.growth.toFixed(1)}%</span>`];}));}
+  }
+  else if(currentTab==='nuevosRec'){
+    const meses=[...new Set(sabanaData.filter(d=>d.tipo==='Factura de venta').map(d=>d.mes))].sort();
+    html+=`<div class="data-section"><div class="title">Clientes nuevos vs recurrentes</div><table class="dt"><tr><th>Mes</th><th class="num">Total</th><th class="num">Nuevos</th><th class="num">Recurrentes</th><th class="num">% nuevos</th><th class="num">Ingreso nuevos</th></tr>`;
+    const allPrev=new Set();meses.forEach((m,i)=>{const fvM=sabanaData.filter(d=>d.tipo==='Factura de venta'&&d.mes===m);const cliM=new Set(fvM.map(d=>d.cliente));let nuevos=0,ingN=0;cliM.forEach(c=>{if(!allPrev.has(c)){nuevos++;ingN+=fvM.filter(d=>d.cliente===c).reduce((s,d)=>s+d.ingresos,0);}});const rec=cliM.size-nuevos;html+=`<tr><td><span class="badge ${badgeColors[i%7]}">${mesShort(m)}</span></td><td class="num">${fmtN(cliM.size)}</td><td class="num"><span class="alert-badge blue">${fmtN(nuevos)}</span></td><td class="num">${fmtN(rec)}</td><td class="num">${(cliM.size>0?(nuevos/cliM.size*100):0).toFixed(1)}%</td><td class="num">${fmt(ingN)}</td></tr>`;cliM.forEach(c=>allPrev.add(c));});html+=`</table></div>`;
+  }
+  else if(currentTab==='rentKilo'){html+=makeTable('Por bodega',[{label:'Bodega'},{label:'Ganancia',num:1},{label:'Kilos',num:1},{label:'$/Kilo',num:1},{label:'Margen',num:1}],ss.byBodega.filter(b=>b.kilos>0).map((b,i)=>[`<span class="badge ${badgeColors[i%7]}">${b.name}</span>`,fmt(b.ganancia),fmtN(b.kilos),fmt(b.ganancia/b.kilos),Math.round(b.margen)+'%']))+makeTable('Por clase',[{label:'Clase'},{label:'Ganancia',num:1},{label:'Kilos',num:1},{label:'$/Kilo',num:1}],ss.byClase.filter(c=>c.kilos>0).map((c,i)=>[`<span class="badge ${badgeColors[i%7]}">${c.name}</span>`,fmt(c.ganancia),fmtN(c.kilos),fmt(c.ganancia/c.kilos)]))+makeTable('Por vendedor',[{label:'Vendedor'},{label:'Ganancia',num:1},{label:'Kilos',num:1},{label:'$/Kilo',num:1}],ss.byVendedor.filter(v=>v.kilos>0).map((v,i)=>[`<span class="badge ${badgeColors[i%7]}">${v.name}</span>`,fmt(v.ganancia),fmtN(v.kilos),fmt(v.ganancia/v.kilos)]));}
+  else if(currentTab==='estado'){html+=makeTable('',[{label:'Estado'},{label:'OVs',num:1},{label:'Toneladas',num:1},{label:'Monto',num:1},{label:'Peso',w:'130px'}],os.byEstado.map(e=>{const c=estadoBadge[e.name]||'blue';return[`<span class="badge ${c}">${e.name}</span>`,fmtN(e.docs),(e.peso/1000).toFixed(1)+' ton',fmt(e.importe),barCol(e.importe,os.totalPipe,c)];}));}
+  else if(currentTab==='pipelineBod'){html+=makeTable('',[{label:'Bodega'},{label:'OVs',num:1},{label:'Monto',num:1},{label:'Ton.',num:1},{label:'Peso',w:'130px'}],os.byBodega.map((b,i)=>[`<span class="badge ${badgeColors[i%7]}">${b.name}</span>`,fmtN(b.docs),fmt(b.importe),(b.peso/1000).toFixed(1),barCol(b.importe,os.totalPipe,badgeColors[i%7])]));}
+  else if(currentTab==='pipelineVend'){html+=makeTable('',[{label:'Vendedor'},{label:'OVs',num:1},{label:'Monto',num:1},{label:'Peso',w:'130px'}],os.byVendedor.map((v,i)=>[`<span class="badge ${badgeColors[i%7]}">${v.name}</span>`,fmtN(v.docs),fmt(v.importe),barCol(v.importe,os.totalPipe,badgeColors[i%7])]));}
+
+  el.innerHTML=html;
+}
+
+// KPIs above content
+function renderKPIs(){
+  const ss=sabanaStats,os=ovStats,label=getLabel();let h='';
+  if(sabanaData.length&&ovData.length){const proy=ss.ventaNeta+os.totalPipe;h+=`<div class="section-label">PROYECCIÓN · ${label}</div><div class="kpi-row"><div class="kpi-card purple"><div class="lbl">Venta neta</div><div class="val">${fmt(ss.ventaNeta)}</div><div class="sub">${pct(ss.ventaNeta,proy)} del total</div></div><div class="kpi-card purple"><div class="lbl">Pipeline</div><div class="val">${fmt(os.totalPipe)}</div><div class="sub">${pct(os.totalPipe,proy)} pendiente</div></div><div class="kpi-card purple"><div class="lbl">Proyección total</div><div class="val">${fmt(proy)}</div></div></div>`;}
+  if(sabanaData.length){h+=`<div class="section-label">FACTURACIÓN · ${label}</div><div class="kpi-row"><div class="kpi-card green"><div class="lbl">Facturas</div><div class="val">${fmtN(ss.nFolios)}</div></div><div class="kpi-card green"><div class="lbl">Ingresos</div><div class="val">${fmt(ss.totalIng)}</div></div><div class="kpi-card green"><div class="lbl">Ganancia</div><div class="val">${fmt(ss.totalGan)}</div></div><div class="kpi-card green"><div class="lbl">Margen</div><div class="val">${Math.round(ss.margen)}%</div></div></div><div class="kpi-row"><div class="kpi-card orange"><div class="lbl">NC</div><div class="val">${fmtN(ss.nNC)}</div></div><div class="kpi-card orange"><div class="lbl">Monto NC</div><div class="val">${fmt(ss.totalNC)}</div></div><div class="kpi-card orange"><div class="lbl">Venta neta</div><div class="val">${fmt(ss.ventaNeta)}</div></div></div>`;}
+  if(ovData.length){h+=`<div class="section-label">PIPELINE · ${label}</div><div class="kpi-row"><div class="kpi-card blue"><div class="lbl">OVs pipeline</div><div class="val">${fmtN(os.nPipe)}</div></div><div class="kpi-card blue"><div class="lbl">Monto</div><div class="val">${fmt(os.totalPipe)}</div></div><div class="kpi-card blue"><div class="lbl">Ton. pipeline</div><div class="val">${(os.tonPipe/1000).toFixed(1)} ton</div></div></div>`;}
+  return h;
+}
+
+function runAnalysis(){applyFilters();sabanaStats=computeSabanaStats(filteredSabana);ovStats=computeOVStats(filteredOV);renderTab();}
+function resetApp(){window.speechSynthesis?.cancel();isSpeaking=false;sabanaData=[];ovData=[];document.getElementById('dashboard').style.display='none';document.getElementById('uploadScreen').style.display='flex';document.getElementById('fileSabana').value='';document.getElementById('fileOV').value='';document.getElementById('cardSabana').classList.remove('loaded');document.getElementById('cardOV').classList.remove('loaded');document.getElementById('fnameSabana').textContent='';document.getElementById('fnameOV').textContent='';document.getElementById('btnStart').classList.remove('show');}
+
+function toggleSpeak(){const btn=document.getElementById('btnEsc');if(isSpeaking){window.speechSynthesis?.cancel();isSpeaking=false;btn.classList.remove('speaking');btn.innerHTML='&#128265; Escuchar';return;}const ss=sabanaStats,os=ovStats;let t=`Reporte Dipisa. `;if(sabanaData.length)t+=`Venta neta: ${fmt(ss.ventaNeta)}, margen ${Math.round(ss.margen)}%. `;if(ovData.length)t+=`Pipeline: ${fmt(os.totalPipe)}. `;if(ovData.length&&sabanaData.length)t+=`Proyección: ${fmt(ss.ventaNeta+os.totalPipe)}. `;if(!window.speechSynthesis)return;window.speechSynthesis.cancel();const u=new SpeechSynthesisUtterance(t.substring(0,600));u.lang='es-CL';u.rate=1.05;const v=window.speechSynthesis.getVoices().find(v=>v.lang.startsWith('es'));if(v)u.voice=v;u.onend=()=>{isSpeaking=false;btn.classList.remove('speaking');btn.innerHTML='&#128265; Escuchar';};window.speechSynthesis.speak(u);isSpeaking=true;btn.classList.add('speaking');btn.innerHTML='&#128263; Detener';}
+if(window.speechSynthesis)window.speechSynthesis.getVoices();
+
+function downloadCSV(){
+  const sep=';';const label=getLabel();
+  let csv='REPORTE DIPISA - '+label+'\n\n';
+  // Facturación por bodega
+  if(sabanaData.length){
+    csv+='FACTURACIÓN POR BODEGA\n';
+    csv+='Bodega'+sep+'Facturas'+sep+'Ingresos'+sep+'Costo'+sep+'Ganancia'+sep+'Margen\n';
+    sabanaStats.byBodega.forEach(b=>{csv+=b.name+sep+b.folios+sep+Math.round(b.ingresos)+sep+Math.round(b.costo)+sep+Math.round(b.ganancia)+sep+Math.round(b.margen)+'%\n';});
+    csv+='\nFACTURACIÓN POR VENDEDOR\n';
+    csv+='Vendedor'+sep+'Facturas'+sep+'Ingresos'+sep+'Costo'+sep+'Ganancia'+sep+'Margen\n';
+    sabanaStats.byVendedor.forEach(v=>{csv+=v.name+sep+v.folios+sep+Math.round(v.ingresos)+sep+Math.round(v.costo)+sep+Math.round(v.ganancia)+sep+Math.round(v.margen)+'%\n';});
+    csv+='\nFACTURACIÓN POR CLASE\n';
+    csv+='Clase'+sep+'Facturas'+sep+'Ingresos'+sep+'Ganancia'+sep+'Margen\n';
+    sabanaStats.byClase.forEach(c=>{csv+=c.name+sep+c.folios+sep+Math.round(c.ingresos)+sep+Math.round(c.ganancia)+sep+Math.round(c.margen)+'%\n';});
+    csv+='\nEVOLUCIÓN MENSUAL\n';
+    csv+='Mes'+sep+'Facturas'+sep+'Ingresos'+sep+'Ganancia'+sep+'Margen'+sep+'Kilos\n';
+    sabanaStats.byMes.forEach(m=>{csv+=mesShort(m.name)+sep+m.folios+sep+Math.round(m.ingresos)+sep+Math.round(m.ganancia)+sep+Math.round(m.margen)+'%'+sep+Math.round(m.kilos)+'\n';});
+    csv+='\nTOP 20 CLIENTES\n';
+    csv+='Cliente'+sep+'Facturas'+sep+'Ingresos'+sep+'Ganancia'+sep+'Margen\n';
+    sabanaStats.byCliente.slice(0,20).forEach(c=>{csv+='"'+c.name+'"'+sep+c.folios+sep+Math.round(c.ingresos)+sep+Math.round(c.ganancia)+sep+Math.round(c.margen)+'%\n';});
+  }
+  if(ovData.length){
+    csv+='\nPIPELINE POR ESTADO\n';
+    csv+='Estado'+sep+'OVs'+sep+'Monto'+sep+'Toneladas\n';
+    ovStats.byEstado.forEach(e=>{csv+=e.name+sep+e.docs+sep+Math.round(e.importe)+sep+(e.peso/1000).toFixed(1)+'\n';});
+  }
+  const BOM='\uFEFF';
+  const blob=new Blob([BOM+csv],{type:'text/csv;charset=utf-8'});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement('a');a.href=url;a.download='reporte_dipisa_'+new Date().toISOString().substring(0,10)+'.csv';
+  a.click();URL.revokeObjectURL(url);
+}
+
+function checkReady(){document.getElementById('btnStart').classList.toggle('show',sabanaData.length>0||ovData.length>0);}
+document.getElementById('fileSabana').addEventListener('change',async e=>{const f=e.target.files[0];if(!f)return;sabanaFile=f.name;document.getElementById('fnameSabana').textContent=f.name;document.getElementById('cardSabana').classList.add('loaded');sabanaData=parseSabana(await f.text());checkReady();});
+document.getElementById('fileOV').addEventListener('change',async e=>{const f=e.target.files[0];if(!f)return;ovFile=f.name;document.getElementById('fnameOV').textContent=f.name;document.getElementById('cardOV').classList.add('loaded');ovData=parseOV(await f.text());checkReady();});
+
+function startAnalysis(){
+  document.getElementById('uploadScreen').style.display='none';
+  document.getElementById('dashboard').style.display='flex';
+  if(ovData.length)document.getElementById('navPipeline').style.display='';
+  let pills='';
+  if(sabanaFile)pills+=`<span class="file-pill green"><span class="dot"></span>${sabanaFile} · ${fmtN(sabanaData.length)} líneas</span>`;
+  if(ovFile)pills+=`<span class="file-pill blue"><span class="dot"></span>${ovFile} · ${fmtN(ovData.length)} líneas</span>`;
+  document.getElementById('filePills').innerHTML=pills;
+  populateFilters();filteredSabana=[...sabanaData];filteredOV=[...ovData];
+  sabanaStats=computeSabanaStats(filteredSabana);ovStats=computeOVStats(filteredOV);
+  renderTab();
+}
+</script>
+</body>
+</html>
